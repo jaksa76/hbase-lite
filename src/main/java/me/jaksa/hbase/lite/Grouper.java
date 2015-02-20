@@ -10,6 +10,8 @@ import java.io.IOException;
 
 /**
  * Groups all rows in the same reduce bucket
+ *
+ * @author Jaksa Vuckovic
  */
 public class Grouper extends TableMapper<IntWritable, Result> {
     private final IntWritable ONE_KEY = new IntWritable(0);

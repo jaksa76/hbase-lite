@@ -1,10 +1,7 @@
 package me.jaksa.hbase.lite;
 
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
@@ -14,6 +11,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Represents an HBase table for a specific type of domain object.
+ *
+ * You can have
+ * multiple Tables defined for the same table in HBase each having a different set of columns
+ * and a different domain object. In that case storing an object in one table will not
+ * overwrite columns that are not defined for that table.
+ *
  * @author Jaksa Vuckovic
  */
 public class Table<T> {
@@ -51,12 +55,12 @@ public class Table<T> {
      * @throws IOException
      */
     public T get(Object key) throws IOException {
-        Get get1 = new Get(toBytes(key));
+        Get get = new Get(toBytes(key));
         for (Column column : columns) {
-            get1.addColumn(Bytes.toBytes(column.family), Bytes.toBytes(column.name));
+            get.addColumn(Bytes.toBytes(column.family), Bytes.toBytes(column.name));
         }
-        Get get = get1;
         Result result = getHTable().get(get);
+        if (result == null || result.isEmpty()) return null;
         return converter.convert(result);
     }
 
@@ -67,7 +71,17 @@ public class Table<T> {
      * @param t
      */
     public void put(T t) throws IOException {
-        getHTable().put(converter.toPut(t));
+        HTable hTable = getHTable();
+        hTable.put(converter.toPut(t));
+        hTable.flushCommits();
+    }
+
+
+    public void delete(Object key) throws IOException {
+        Delete delete = new Delete(toBytes(key));
+        HTable hTable = getHTable();
+        hTable.delete(delete);
+        hTable.flushCommits();
     }
 
 
@@ -79,9 +93,9 @@ public class Table<T> {
         return scan;
     }
 
-
     protected HTable getHTable() throws IOException {
-        if (hTable == null) hTable = new HTable(HBaseConfiguration.create(), name);
+        // we use lazy initialization in case we'll want to serialize this class at some point
+        if (hTable == null) hTable = new HTable(HBaseLite.getConfiguration(), name);
         return hTable;
     }
 

@@ -9,16 +9,11 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
 
-import java.io.File;
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
@@ -31,13 +26,14 @@ import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static me.jaksa.hbase.lite.TestUtils.*;
 
+/**
+* @author Jaksa Vuckovic
+*/
 public class TableTest {
-    public static final Dummy DUMMY_JOE = new Dummy("joe", "1");
-    public static final Put DUMMY_PUT = new Put(new byte[1]);
-    public static final Result DUMMY_RESULT = new Result();
 
-    Converter<Dummy> converter = Mockito.mock(Converter.class);
+    Converter<TestUtils.Dummy> converter = Mockito.mock(Converter.class);
     private final HTable hTable = Mockito.mock(HTable.class);
 
     @Before
@@ -73,16 +69,16 @@ public class TableTest {
 
     @Test
     public void testCreatingTable() throws Exception {
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
     }
 
     @Test
     public void testGettingAnObject() throws Exception {
         when(hTable.get((Get) any())).thenReturn(DUMMY_RESULT);
         when(converter.convert(DUMMY_RESULT)).thenReturn(DUMMY_JOE);
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
 
-        Dummy joe = table.get("joe");
+        TestUtils.Dummy joe = table.get("joe");
 
         assertEquals(DUMMY_JOE, joe);
     }
@@ -90,7 +86,7 @@ public class TableTest {
     @Test
     public void testStoringAnObject() throws Exception {
         when(converter.toPut(eq(DUMMY_JOE))).thenReturn(DUMMY_PUT);
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
 
         table.put(DUMMY_JOE);
 
@@ -104,87 +100,75 @@ public class TableTest {
 
     // TODO test two tables over the same HTable wit overlapping columns
 
-
-    // TODO test storing objects with all supported types of keys
     @Test
     public void testSerializationOfStringKeys() throws Exception {
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
         table.get("StringKey");
         verify(hTable).get(argThat(getForKey(Bytes.toBytes("StringKey"))));
     }
 
     @Test
     public void testSerializationOfIntegerKeys() throws Exception {
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
         table.get(1);
         verify(hTable).get(argThat(getForKey(Bytes.toBytes(1))));
     }
 
     @Test
     public void testSerializationOfLongKeys() throws Exception {
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
         table.get(1l);
         verify(hTable).get(argThat(getForKey(Bytes.toBytes(1l))));
     }
 
     @Test
     public void testSerializationOfDoubleKeys() throws Exception {
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
         table.get(1.0);
         verify(hTable).get(argThat(getForKey(Bytes.toBytes(1.0))));
     }
 
     @Test
     public void testSerializationOfFloatKeys() throws Exception {
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
         table.get(1.0f);
         verify(hTable).get(argThat(getForKey(Bytes.toBytes(1.0f))));
     }
 
     @Test
     public void testSerializationOfShortKeys() throws Exception {
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
         table.get((short) 1);
         verify(hTable).get(argThat(getForKey(Bytes.toBytes(new Short((short) 1)))));
     }
 
     @Test
     public void testSerializationOfBigDecimalKeys() throws Exception {
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
         table.get(new BigDecimal("1928734912837492183749.12394867192384792384"));
         verify(hTable).get(argThat(getForKey(Bytes.toBytes(new BigDecimal("1928734912837492183749.12394867192384792384")))));
     }
 
     @Test
     public void testSerializationOfBooleanKeys() throws Exception {
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
         table.get(true);
         verify(hTable).get(argThat(getForKey(Bytes.toBytes(new Boolean(true)))));
     }
 
     @Test
     public void testSerializationOfByteBufferKeys() throws Exception {
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
         table.get(ByteBuffer.wrap("abc".getBytes()));
         verify(hTable).get(argThat(getForKey("abc".getBytes())));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testSerializationOfUnsupportedKeyType() throws Exception {
-        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        Table<TestUtils.Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
         table.get(Runtime.getRuntime());
     }
 
-
-
-    static class Dummy {
-        public final String name;
-        public final String value;
-        Dummy(String name, String value) {
-            this.name = name;
-            this.value = value;
-        }
-    }
 
     static Matcher<Get> getForKey(byte[] key) {
         return new TypeSafeMatcher<Get>() {
