@@ -19,8 +19,8 @@ import java.util.List;
 public class Table<T> {
     private final String name;
     private final List<Column> columns;
-    private final HTable hTable;
     private final Converter<T> converter;
+    private HTable hTable;
 
     /**
      * @param name the name of the table
@@ -33,7 +33,12 @@ public class Table<T> {
         this.converter = converter;
         List<Column> columnsList = extractColumns(columns);
         this.columns = columnsList;
-        hTable = new HTable(HBaseConfiguration.create(), name);
+
+    }
+
+    protected HTable getHTable() throws IOException {
+        if (hTable == null) hTable = new HTable(HBaseConfiguration.create(), name);
+        return hTable;
     }
 
     static List<Column> extractColumns(String columns) {
@@ -63,7 +68,7 @@ public class Table<T> {
             get1.addColumn(Bytes.toBytes(column.family), Bytes.toBytes(column.name));
         }
         Get get = get1;
-        Result result = hTable.get(get);
+        Result result = getHTable().get(get);
         return converter.convert(result);
     }
 
@@ -72,8 +77,8 @@ public class Table<T> {
      *
      * @param t
      */
-    public void put(T t) {
-        converter.toPut(t);
+    public void put(T t) throws IOException {
+        getHTable().put(converter.toPut(t));
     }
 
     private Scan scan() {
@@ -84,7 +89,7 @@ public class Table<T> {
         return scan;
     }
 
-    private byte[] toBytes(Object key) {
+    static byte[] toBytes(Object key) {
         if (key instanceof String) return Bytes.toBytes((String) key);
         if (key instanceof Integer) return Bytes.toBytes((Integer) key);
         if (key instanceof Boolean) return Bytes.toBytes((Boolean) key);
