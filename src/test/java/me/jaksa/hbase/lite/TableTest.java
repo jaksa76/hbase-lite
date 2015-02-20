@@ -1,20 +1,29 @@
 package me.jaksa.hbase.lite;
 
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Matchers;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,6 +35,11 @@ public class TableTest {
 
     Converter<Dummy> converter = Mockito.mock(Converter.class);
     private final HTable hTable = Mockito.mock(HTable.class);
+
+    @Before
+    public void setUp() {
+        when(hTable.getName()).thenReturn(TableName.valueOf("myTable"));
+    }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreatingATableWithNoColumns() throws Exception {
@@ -55,15 +69,14 @@ public class TableTest {
 
     @Test
     public void testCreatingTable() throws Exception {
-        HTable hTable = Mockito.mock(HTable.class);
-        TestableTable<Dummy> table = new TestableTable("myTable", "fam1:col1,fam1:col2,fam2:col1", converter, hTable);
+        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
     }
 
     @Test
     public void testGettingAnObject() throws Exception {
         when(hTable.get((Get) any())).thenReturn(DUMMY_RESULT);
         when(converter.convert(DUMMY_RESULT)).thenReturn(DUMMY_JOE);
-        Table<Dummy> table = new TestableTable("myTable", "fam1:col1,fam1:col2,fam2:col1", converter, hTable);
+        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
 
         Dummy joe = table.get("joe");
 
@@ -73,7 +86,7 @@ public class TableTest {
     @Test
     public void testStoringAnObject() throws Exception {
         when(converter.toPut(eq(DUMMY_JOE))).thenReturn(DUMMY_PUT);
-        Table<Dummy> table = new TestableTable("myTable", "fam1:col1,fam1:col2,fam2:col1", converter, hTable);
+        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
 
         table.put(DUMMY_JOE);
 
@@ -87,25 +100,18 @@ public class TableTest {
 
     // TODO test two tables over the same HTable wit overlapping columns
 
+
     // TODO test storing objects with all supported types of keys
+    @Test
+    public void testSerializationOfKeys() throws Exception {
+        Table<Dummy> table = new Table(hTable, "fam1:col1,fam1:col2,fam2:col1", converter);
+        table.get("StringKey");
+        verify(hTable).get(argThat(getForKey(Bytes.toBytes("StringKey"))));
+    }
+
 
     // TODO test storing an object with an unsupported type of key
 
-
-    // for testing purposes
-    static class TestableTable<T> extends Table<T> {
-        private final HTable hTable;
-
-        public TestableTable(String name, String columns, Converter converter, HTable hTable) throws IOException {
-            super(name, columns, converter);
-            this.hTable = hTable;
-        }
-
-        @Override
-        protected HTable getHTable() throws IOException {
-            return hTable;
-        }
-    }
 
     static class Dummy {
         public final String name;
@@ -114,5 +120,19 @@ public class TableTest {
             this.name = name;
             this.value = value;
         }
+    }
+
+    static Matcher<Get> getForKey(byte[] key) {
+        return new TypeSafeMatcher<Get>() {
+            @Override
+            protected boolean matchesSafely(Get get) {
+                return Arrays.equals(get.getRow(), key);
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText(key.toString());
+            }
+        };
     }
 }
