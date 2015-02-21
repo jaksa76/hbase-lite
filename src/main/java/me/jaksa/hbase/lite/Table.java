@@ -1,6 +1,5 @@
 package me.jaksa.hbase.lite;
 
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 
@@ -9,6 +8,7 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Represents an HBase table for a specific type of domain object.
@@ -47,7 +47,7 @@ public class Table<T> {
 
 
     /**
-     * Retrieve the object with the specified key. This method will transform the key to a byte array before invokeing
+     * Retrieve the object with the specified key. This method will transform the key to a byte array before invoking
      * HBase.
      *
      * @param key the key of this object
@@ -76,12 +76,33 @@ public class Table<T> {
         hTable.flushCommits();
     }
 
-
+    /**
+     * Deletes the object with the specified key. This method will transform the key to a byte array before invoking
+     * HBase.
+     *
+     * @param key
+     * @throws IOException
+     */
     public void delete(Object key) throws IOException {
         Delete delete = new Delete(toBytes(key));
         HTable hTable = getHTable();
         hTable.delete(delete);
         hTable.flushCommits();
+    }
+
+
+    public <P> Partitioned<T> partitionBy(Function<T, P> f) {
+        return null;
+    }
+
+
+    public <I> Mapped<I> map(Function<T, I> f) {
+        return null;
+    }
+
+
+    public <R> R reduce(Function<Iterable<T>, R> f) {
+        return null;
     }
 
 
