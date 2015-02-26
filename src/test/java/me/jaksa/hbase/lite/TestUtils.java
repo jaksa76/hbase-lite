@@ -9,6 +9,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
 
@@ -30,7 +31,7 @@ public class TestUtils {
         }
     }
 
-    static class Dummy {
+    static class Dummy implements Serializable {
         public final String name;
         public final String value;
         Dummy(String name, String value) {
