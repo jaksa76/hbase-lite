@@ -16,8 +16,9 @@ public class MappedImpl<T> implements Mapped<T> {
     }
 
     @Override
-    public <P> Partitioned<T> partitionBy(SerializableFunction<T, P> f) {
-        throw new UnsupportedOperationException();
+    public <P> Partitioned<T> partitionBy(PartitionFunction<T, P> f) {
+        jobBuilder.addPartitioner(f);
+        return new PartitionedImpl<>(jobBuilder);
     }
 
     @Override

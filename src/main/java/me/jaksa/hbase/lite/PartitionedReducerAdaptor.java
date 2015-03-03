@@ -3,7 +3,6 @@ package me.jaksa.hbase.lite;
 import com.google.common.collect.Iterables;
 import org.apache.hadoop.hbase.mapreduce.TableReducer;
 import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
 import java.io.IOException;
@@ -17,7 +16,7 @@ import java.io.Serializable;
  *
  * @author Jaksa Vuckovic
  */
-public class ReducerAdaptor<I, R extends Serializable> extends TableReducer<BytesWritable, BytesWritable, Text> {
+public class PartitionedReducerAdaptor<I, R extends Serializable> extends TableReducer<BytesWritable, BytesWritable, Text> {
     private SerializableFunction<Iterable<I>, R> reducerFunction;
 
     @Override
@@ -37,6 +36,6 @@ public class ReducerAdaptor<I, R extends Serializable> extends TableReducer<Byte
 
         R result = reducerFunction.apply(domainObjects);
 
-        TempStorage.getInstance().storeResult(context, result);
+        TempStorage.getInstance().storeResult(context, key, result);
     }
 }

@@ -95,8 +95,10 @@ public class Table<T> {
     }
 
 
-    public <P> Partitioned<T> partitionBy(Function<T, P> f) {
-        return null;
+    public <P> Partitioned<T> partitionBy(PartitionFunction<T, P> f) throws IOException {
+        JobBuilder jobBuilder = createJobBuilder();
+        jobBuilder.addPartitioner(f);
+        return new PartitionedImpl<T>(jobBuilder);
     }
 
 

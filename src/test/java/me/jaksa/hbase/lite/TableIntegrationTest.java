@@ -7,9 +7,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.google.common.collect.Iterables.size;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -54,7 +56,23 @@ public class TableIntegrationTest {
         testTable.put(new Dummy("june", "four"));
 
         List<String> result = testTable.map(d -> d.value).reduce(values -> Lists.newArrayList(values));
+
         assertThat(result, hasItems("two", "three", "four"));
+    }
+
+
+    @Test
+    public void testPartitioning() throws Exception {
+        testTable.put(new Dummy("jack", "two"));
+        testTable.put(new Dummy("jill", "three"));
+        testTable.put(new Dummy("june", "four"));
+
+        Iterable<Integer> result = testTable
+                .map(d -> d.value)
+                .partitionBy(v -> v.charAt(0))
+                .reduce(values -> size(values));
+
+        assertThat(result, hasItems(2, 1));
     }
 
     @Test
@@ -68,7 +86,23 @@ public class TableIntegrationTest {
                 .map(v -> Integer.parseInt(v))
                 .map(n -> n -1)
                 .reduce(values -> Lists.newArrayList(values));
+
         assertThat(result, hasItems(1, 2, 3));
+    }
+
+    @Test
+    public void testMultiPartitioning() throws Exception {
+        testTable.put(new Dummy("jack", "10"));
+        testTable.put(new Dummy("jill", "21"));
+        testTable.put(new Dummy("june", "22"));
+
+        Iterable<ArrayList<String>> result = testTable
+                .partitionBy(d -> d.value.charAt(0))
+                .map(d -> d.value)
+                .partitionBy(v -> v.charAt(1))
+                .reduce(values -> Lists.newArrayList(values));
+
+        assertThat(result, hasItems(hasItems("10"), hasItems("21"), hasItems("22")));
     }
 
     @Test

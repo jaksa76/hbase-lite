@@ -26,7 +26,7 @@ class JobBuilder {
     private final Scan scan;
     private Job job;
     private List<SerializableFunction> mappers;
-    private List<SerializableFunction> partitioners;
+//    private List<SerializableFunction> partitioners;
     private Function reducer;
 
     public JobBuilder(HTable sourceTable, TempStorage tempStorage,
@@ -43,9 +43,9 @@ class JobBuilder {
         mappers.add(mapper);
     }
 
-    public void addPartitioner(SerializableFunction partitioner) {
-        if (partitioners == null) partitioners = new ArrayList<>();
-        partitioners.add(partitioner);
+    public void addPartitioner(PartitionFunction partitioner) {
+        if (mappers == null) mappers = new ArrayList<>();
+        mappers.add(partitioner);
     }
 
     public void setReducer(Function reducer) {
@@ -65,21 +65,29 @@ class JobBuilder {
 
         if (mappers == null) {
             TableMapReduceUtil.initTableMapperJob(sourceTable.getName().getName(),
-                    scan, Grouper.class, IntWritable.class, BytesWritable.class, job);
+                    scan, Grouper.class, BytesWritable.class, BytesWritable.class, job);
         } else {
             tempStorage.storeMapperFunctions(job, mappers);
             TableMapReduceUtil.initTableMapperJob(sourceTable.getName().getName(),
-                    scan, MapperAdaptor.class, IntWritable.class, BytesWritable.class, job);
+                    scan, MapperAdaptor.class, BytesWritable.class, BytesWritable.class, job);
         }
 
-        if (partitioners == null) {
+        if (!hasPartitioners()) {
             TableMapReduceUtil.initTableReducerJob(TempStorage.TABLE_NAME, ReducerAdaptor.class, job);
             job.setNumReduceTasks(1); // only 1 reducer for non partitioned data
         } else {
-            // TODO use PartitionedReducerAdaptor
+            TableMapReduceUtil.initTableReducerJob(TempStorage.TABLE_NAME, PartitionedReducerAdaptor.class, job);
         }
 
         return job;
+    }
+
+    private boolean hasPartitioners() {
+        if (mappers == null) return false;
+        for (SerializableFunction mapper : mappers) {
+            if (mapper instanceof PartitionFunction) return true;
+        }
+        return false;
     }
 
     public <R> R reduceToSingleValue() throws IOException {
@@ -92,6 +100,21 @@ class JobBuilder {
             R result = tempStorage.retrieveResult(job);
 
             return (result != null) ? result : (R) reducer.apply(Collections.emptyList());
+        } catch (ClassNotFoundException | InterruptedException e) {
+            throw new IOException(e);
+        }
+    }
+
+    public <R extends Serializable> Iterable<R> reduceToMultipleValues() throws IOException {
+        try {
+            if (job == null) job = createJob();
+            boolean success = job.waitForCompletion(true);
+            if (!success) throw new IOException("Failed processing " + job.getStatus().getFailureInfo());
+
+            // if there are no rows in the table no result will be stored
+            Iterable<R> result = tempStorage.retrieveResults(job);
+
+            return (result != null) ? result : Collections.emptyList();
         } catch (ClassNotFoundException | InterruptedException e) {
             throw new IOException(e);
         }

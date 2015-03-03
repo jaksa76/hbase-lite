@@ -15,8 +15,8 @@ import java.io.Serializable;
  *
  * @author Jaksa Vuckovic
  */
-class Grouper<T extends Serializable> extends TableMapper<IntWritable, BytesWritable> {
-    private final IntWritable ONE_KEY = new IntWritable(0);
+class Grouper<T extends Serializable> extends TableMapper<BytesWritable, BytesWritable> {
+    private final BytesWritable ONE_KEY = new BytesWritable(new byte[] {42});
     private Converter<T> converter;
 
     @Override

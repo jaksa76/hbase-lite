@@ -1,10 +1,12 @@
 package me.jaksa.hbase.lite;
 
+import com.google.common.collect.Iterables;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -12,7 +14,9 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.function.Function;
 
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
@@ -27,6 +31,7 @@ class TempStorage {
     public static final byte[] VALUE = toBytes("val");
     public static final String REDUCER_KEY = "reducer-key";
     public static final String MAPPERS_KEY = "mappers-key";
+    public static final String PARTITIONERS_KEY = "partitioners-key";
     private static TempStorage instance;
 
     private final HTable hTable;
@@ -77,6 +82,14 @@ class TempStorage {
         context.write(keyout, put);
     }
 
+    public <R extends Serializable> void storeResult(Reducer.Context context, BytesWritable key, R result) throws IOException, InterruptedException {
+        String jobId = context.getJobID().getJtIdentifier();
+        Text keyout = new Text(jobId);
+        Put put = new Put(toBytes(jobId));
+        put.add(COLUMN_FAMILY, key.copyBytes(), SerializableUtils.toBytes(result));
+        context.write(keyout, put);
+    }
+
     public <R extends Serializable> R retrieveResult(Job job) throws IOException, ClassNotFoundException {
         Get get = new Get(toBytes(job.getJobID().getJtIdentifier()));
         get.addColumn(COLUMN_FAMILY, VALUE);
@@ -84,6 +97,21 @@ class TempStorage {
         if (results.isEmpty()) return null;
         byte[] value = results.getValue(COLUMN_FAMILY, VALUE);
         return (R) SerializableUtils.fromBytes(value);
+    }
+
+    public <R extends Serializable> Iterable<R> retrieveResults(Job job) throws IOException, ClassNotFoundException {
+        Get get = new Get(toBytes(job.getJobID().getJtIdentifier()));
+        Result row = hTable.get(get);
+        if (row.isEmpty()) return null;
+
+        NavigableMap<byte[], byte[]> familyMap = row.getFamilyMap(COLUMN_FAMILY);
+
+        ArrayList<R> results = new ArrayList<>(familyMap.size());
+        for (byte[] value : familyMap.values()) {
+            results.add((R) SerializableUtils.fromBytes(value));
+        };
+
+        return results;
     }
 
     public <T> Converter<T> retrieveConverter(Mapper.Context context) throws IOException {
@@ -120,4 +148,26 @@ class TempStorage {
             throw new RuntimeException("could not deserialize mappers", e);
         }
     }
+
+//    public void storePartitionerFunctions(Job job, List<SerializableFunction> mappers) throws IOException {
+//        String reducerKey = Long.toString(System.nanoTime());
+//        job.getConfiguration().set(PARTITIONERS_KEY, reducerKey);
+//
+//        Put put = new Put(Bytes.toBytes(reducerKey));
+//        put.add(COLUMN_FAMILY, VALUE, SerializableUtils.toBytes((Serializable) mappers));
+//        hTable.put(put);
+//    }
+//
+//    public List<SerializableFunction> loadPartitionerFunctions(Mapper.Context context) throws IOException {
+//        String reducerKey = context.getConfiguration().get(PARTITIONERS_KEY);
+//        Get get = new Get(toBytes(reducerKey));
+//        get.addColumn(COLUMN_FAMILY, VALUE);
+//        Result results = hTable.get(get);
+//        try {
+//            byte[] value = results.getValue(COLUMN_FAMILY, VALUE);
+//            return (List<SerializableFunction>) SerializableUtils.fromBytes(value);
+//        } catch (ClassNotFoundException e) {
+//            throw new RuntimeException("could not deserialize partitioners", e);
+//        }
+//    }
 }
