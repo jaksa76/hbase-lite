@@ -10,10 +10,10 @@ import java.util.function.Function;
  * @author Jaksa Vuckovic
  */
 public interface Partitioned<T> {
-    public <P> Partitioned<T> partitionBy(Function<T, P> f);
+    public <P> Partitioned<T> partitionBy(SerializableFunction<T, P> f);
 
-    public <I> Partitioned<I> map(Function<T, I> f);
+    public <I> Partitioned<I> map(SerializableFunction<T, I> f);
 
     // maybe we should return a Map<R> here
-    public <R> Iterable<R> reduce(Function<Iterable<T>, R> f);
+    public <R> Iterable<R> reduce(SerializableFunction<Iterable<T>, R> f);
 }

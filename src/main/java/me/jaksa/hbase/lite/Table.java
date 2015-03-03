@@ -1,19 +1,14 @@
 package me.jaksa.hbase.lite;
 
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.TaskType;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -105,34 +100,22 @@ public class Table<T> {
     }
 
 
-    public <I> Mapped<I> map(Function<T, I> f) {
-        return null;
+    public <I> Mapped<I> map(SerializableFunction<T, I> f) throws IOException {
+        JobBuilder jobBuilder = createJobBuilder();
+        jobBuilder.addMapper(f);
+        return new MappedImpl<>(jobBuilder);
     }
 
 
-    public <R extends Serializable> R reduce(SerializableFunction<Iterable<T>, R> f) throws IOException, ClassNotFoundException, InterruptedException {
-        Job job = Job.getInstance(HBaseLite.getConfiguration());
+    public <R extends Serializable> R reduce(SerializableFunction<Iterable<T>, R> f) throws IOException {
+        JobBuilder jobBuilder = createJobBuilder();
+        jobBuilder.setReducer(f);
+        return jobBuilder.reduceToSingleValue();
+    }
 
-        job.setJarByClass(f.getClass());
-        TableMapReduceUtil.addDependencyJars(job);
 
-        TempStorage tempStorage = TempStorage.getInstance();
-        tempStorage.storeConverter(job, converter);
-        tempStorage.storeReducerFunction(job, (Serializable) f);
-
-        TableMapReduceUtil.initTableMapperJob(getHTable().getName().getName(),
-                scan(), Grouper.class, IntWritable.class, BytesWritable.class, job);
-        TableMapReduceUtil.initTableReducerJob(TempStorage.TABLE_NAME, ReducerAdaptor.class, job);
-
-        job.setNumReduceTasks(1); // only 1 reducer for non partitioned data
-
-        boolean success = job.waitForCompletion(true);
-        if (!success) throw new IOException("Failed processing " + job.getStatus().getFailureInfo());
-
-        // if there are no rows in the table no result will be stored
-        R result = tempStorage.retrieveResult(job);
-
-        return (result != null) ? result : f.apply(Collections.emptyList());
+    private JobBuilder createJobBuilder() throws IOException {TempStorage tempStorage = TempStorage.getInstance();
+        return new JobBuilder(hTable, tempStorage, HBaseLite.getConfiguration(), converter, scan());
     }
 
 
@@ -143,6 +126,7 @@ public class Table<T> {
         }
         return scan;
     }
+
 
     protected HTable getHTable() throws IOException {
         // we use lazy initialization in case we'll want to serialize this class at some point

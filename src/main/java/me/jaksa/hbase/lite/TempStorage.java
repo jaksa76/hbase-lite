@@ -12,6 +12,8 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.List;
+import java.util.function.Function;
 
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
 
@@ -24,6 +26,7 @@ class TempStorage {
     public static final byte[] COLUMN_FAMILY = toBytes("cf");
     public static final byte[] VALUE = toBytes("val");
     public static final String REDUCER_KEY = "reducer-key";
+    public static final String MAPPERS_KEY = "mappers-key";
     private static TempStorage instance;
 
     private final HTable hTable;
@@ -94,5 +97,27 @@ class TempStorage {
 
     public void storeConverter(Job job, Converter converter) {
         job.getConfiguration().setClass("converter", converter.getClass(), Converter.class);
+    }
+
+    public void storeMapperFunctions(Job job, List<SerializableFunction> mappers) throws IOException {
+        String reducerKey = Long.toString(System.nanoTime());
+        job.getConfiguration().set(MAPPERS_KEY, reducerKey);
+
+        Put put = new Put(Bytes.toBytes(reducerKey));
+        put.add(COLUMN_FAMILY, VALUE, SerializableUtils.toBytes((Serializable) mappers));
+        hTable.put(put);
+    }
+
+    public List<SerializableFunction> loadMapperFunctions(Mapper.Context context) throws IOException {
+        String reducerKey = context.getConfiguration().get(MAPPERS_KEY);
+        Get get = new Get(toBytes(reducerKey));
+        get.addColumn(COLUMN_FAMILY, VALUE);
+        Result results = hTable.get(get);
+        try {
+            byte[] value = results.getValue(COLUMN_FAMILY, VALUE);
+            return (List<SerializableFunction>) SerializableUtils.fromBytes(value);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("could not deserialize mappers", e);
+        }
     }
 }

@@ -1,14 +1,16 @@
 package me.jaksa.hbase.lite;
 
-import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import me.jaksa.hbase.lite.TestUtils.Dummy;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 import static com.google.common.collect.Iterables.size;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -43,6 +45,30 @@ public class TableIntegrationTest {
         testTable.put(new Dummy("june", "four"));
 
         assertThat(testTable.reduce(values -> size(values)), is(3));
+    }
+
+    @Test
+    public void testMapReduce() throws Exception {
+        testTable.put(new Dummy("jack", "two"));
+        testTable.put(new Dummy("jill", "three"));
+        testTable.put(new Dummy("june", "four"));
+
+        List<String> result = testTable.map(d -> d.value).reduce(values -> Lists.newArrayList(values));
+        assertThat(result, hasItems("two", "three", "four"));
+    }
+
+    @Test
+    public void testChainedMapSteps() throws Exception {
+        testTable.put(new Dummy("jack", "2"));
+        testTable.put(new Dummy("jill", "3"));
+        testTable.put(new Dummy("june", "4"));
+
+        List<Integer> result = testTable
+                .map(d -> d.value)
+                .map(v -> Integer.parseInt(v))
+                .map(n -> n -1)
+                .reduce(values -> Lists.newArrayList(values));
+        assertThat(result, hasItems(1, 2, 3));
     }
 
     @Test
