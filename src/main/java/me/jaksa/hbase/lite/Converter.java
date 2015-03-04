@@ -7,7 +7,7 @@ import org.apache.hadoop.hbase.client.Result;
  * A Converter is supposed to convert between objects use by HBase and domain objects. Implement this
  * interface to store your objects into HBase.
  *
- * @param <T>
+ * @param <T> the type of the domain object
  */
 public interface Converter<T> {
     /**
@@ -23,7 +23,7 @@ public interface Converter<T> {
      * the put object.
      *
      * @param t the domain object
-     * @return
+     * @return the Put object used by HBase for storing the domain object
      */
     Put toPut(T t);
 }

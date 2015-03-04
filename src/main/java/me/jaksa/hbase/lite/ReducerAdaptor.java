@@ -17,7 +17,7 @@ import java.io.Serializable;
  *
  * @author Jaksa Vuckovic
  */
-public class ReducerAdaptor<I, R extends Serializable> extends TableReducer<BytesWritable, BytesWritable, Text> {
+class ReducerAdaptor<I, R extends Serializable> extends TableReducer<BytesWritable, BytesWritable, Text> {
     private SerializableFunction<Iterable<I>, R> reducerFunction;
 
     @Override

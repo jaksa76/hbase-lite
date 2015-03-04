@@ -26,7 +26,6 @@ class JobBuilder {
     private final Scan scan;
     private Job job;
     private List<SerializableFunction> mappers;
-//    private List<SerializableFunction> partitioners;
     private Function reducer;
 
     public JobBuilder(HTable sourceTable, TempStorage tempStorage,
@@ -59,7 +58,6 @@ class JobBuilder {
 
         TableMapReduceUtil.addDependencyJars(job);
 
-        TempStorage tempStorage = TempStorage.getInstance();
         tempStorage.storeConverter(job, converter);
         tempStorage.storeReducerFunction(job, (Serializable) reducer);
 

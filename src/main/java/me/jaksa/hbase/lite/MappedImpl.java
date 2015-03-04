@@ -8,7 +8,7 @@ import java.util.function.Function;
 /**
  * @author Jaksa Vuckovic
  */
-public class MappedImpl<T> implements Mapped<T> {
+class MappedImpl<T> implements Mapped<T> {
     private final JobBuilder jobBuilder;
 
     public MappedImpl(JobBuilder jobBuilder) {

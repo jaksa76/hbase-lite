@@ -1,9 +1,19 @@
-# hbase-lite
-An abstraction layer on top of HBase that greatly simplifies writing of Hadoop M/R jobs.
+package me.jaksa.hbase.lite;
 
-# Tutorial
+import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
+import com.jcraft.jsch.UserInfo;
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.yarn.webapp.hamlet.HamletSpec;
 
-```java
+import java.io.Serializable;
+
+/**
+ * @author Jaksa Vuckovic
+ */
 public class Demo {
     public static class Employee implements Serializable {
         private final Long id;
@@ -144,15 +154,3 @@ public class Demo {
         System.out.println("Number of salaries per band by department: " + StringUtils.join(salaryBandsByDeptAfterBonus.iterator(), ','));
     }
 }
-```
-
-# Origins of hbase-lite
-
-I have a PhD in Distributed Systems and have written several distributed computing
-frameworks (even before Google's Map/Reduce). While I was working with Hadoop and HBase during a big data project
-at Zuhlke I noticed that HBase and Hadoop in general are very hard to work with compared to other distributed
-computing platforms, so I started writing some helper methods to provide a nicer API.
-Although the initial implementation was and purpose specific I decided to write a generic library in
-my free time that would allow everyone to easily write Map/Reduce jobs on top of HBase. The hbase-lite
-library is still just a weekend project and doesn't have a dedicated team behind it.
-

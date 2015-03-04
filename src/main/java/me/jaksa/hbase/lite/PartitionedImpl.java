@@ -6,7 +6,7 @@ import java.io.Serializable;
 /**
  * @author Jaksa Vuckovic
  */
-public class PartitionedImpl<T> implements Partitioned<T> {
+class PartitionedImpl<T> implements Partitioned<T> {
     private final JobBuilder jobBuilder;
 
     public PartitionedImpl(JobBuilder jobBuilder) {

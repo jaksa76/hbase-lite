@@ -6,6 +6,44 @@
 	<artifactId>hbase-lite</artifactId>
 	<version>0.1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
+
+    <name>HBaseLite</name>
+    <description>An abstraction layer on top of HBase that greatly
+        simplifies writing of Hadoop M/R jobs.</description>
+    <url>https://github.com/jaksa76/hbase-lite</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Jaksa Vuckovic</name>
+            <email>jaksa76@gmail.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>https://github.com/jaksa76/hbase-lite.git</connection>
+        <url>https://github.com/jaksa76/hbase-lite.git</url>
+        <developerConnection>https://github.com/jaksa76/hbase-lite.git</developerConnection>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
 	<build>
 		<plugins>
 			<plugin>
@@ -16,9 +54,67 @@
 					<target>1.8</target>
 				</configuration>
 			</plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.3.2</version>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.3</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 		</plugins>
 	</build>
 
+<!--
 	<repositories>
 		<repository>
 			<id>central</id>
@@ -26,13 +122,14 @@
 			<url>http://central.maven.org/maven2</url>
 		</repository>
 	</repositories>
+-->
 
 	<dependencies>
 
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-server</artifactId>
-			<version>0.98.1-hadoop2</version>
+			<version>1.0.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>jdk.tools</groupId>
