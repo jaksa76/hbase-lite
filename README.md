@@ -3,6 +3,16 @@ An abstraction layer on top of HBase that greatly simplifies writing of Hadoop M
 
 # Tutorial
 
+First you need to include the hbase-lite library in your pom file:
+
+```xml
+<dependency>
+    <groupId>me.jaksa</groupId>
+    <artifactId>hbase-lite</artifactId>
+    <version>0.1.0</version>
+</dependency>
+```
+
 ```java
 public class Demo {
     public static class Employee implements Serializable {
