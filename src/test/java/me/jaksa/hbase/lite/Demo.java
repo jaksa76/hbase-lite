@@ -69,7 +69,8 @@ public class Demo {
         System.out.println("Total cost after bonus: " + salariesAfterBonus);
 
         // you can specify several levels of partitioning
-        // the key of the map will be a list of 2 elements
+        // the key of the map will be a list of keys that you used to partition
+        // for each combination of keys that generated a non empty partition there will be a map entry
         Map<List, Long> rolesByDept = employees
                 .partitionBy(employee -> employee.getDepartment())
                 .partitionBy(employee -> employee.getTitle().contains("Junior"))
