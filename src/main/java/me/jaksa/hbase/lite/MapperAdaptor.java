@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
+import static me.jaksa.hbase.lite.SerializableUtils.toBytes;
+
 /**
  * Groups all rows in the same reduce bucket
  *
@@ -39,7 +41,9 @@ class MapperAdaptor<T, I extends Serializable> extends TableMapper<BytesWritable
             }
         }
 
-        context.write(new BytesWritable(SerializableUtils.toBytes(outKey)),
-                new BytesWritable(SerializableUtils.toBytes((Serializable) t)));
+        byte[] outkeyBytes = (outKey.size() == 1) ? toBytes((Serializable) outKey.get(0)) : toBytes(outKey);
+
+        context.write(new BytesWritable(outkeyBytes),
+                new BytesWritable(toBytes((Serializable) t)));
     }
 }

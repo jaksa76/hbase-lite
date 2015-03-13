@@ -9,7 +9,7 @@ import java.util.function.Function;
  * @param <T> the type of data
  */
 public interface Mapped<T> {
-    public <P> Partitioned<T> partitionBy(PartitionFunction<T, P> f);
+    public <P> Partitioned<P, T> partitionBy(PartitionFunction<T, P> f);
 
     public <I> Mapped<I> map(SerializableFunction<T, I> f);
 

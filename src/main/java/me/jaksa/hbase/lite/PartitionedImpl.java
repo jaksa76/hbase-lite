@@ -2,11 +2,13 @@ package me.jaksa.hbase.lite;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Jaksa Vuckovic
  */
-class PartitionedImpl<T> implements Partitioned<T> {
+class PartitionedImpl<K, T> implements Partitioned<K, T> {
     private final JobBuilder jobBuilder;
 
     public PartitionedImpl(JobBuilder jobBuilder) {
@@ -14,19 +16,19 @@ class PartitionedImpl<T> implements Partitioned<T> {
     }
 
     @Override
-    public <P> Partitioned<T> partitionBy(PartitionFunction<T, P> f) {
+    public <P> Partitioned<List, T> partitionBy(PartitionFunction<T, P> f) {
         jobBuilder.addPartitioner(f);
-        return new PartitionedImpl<T>(jobBuilder);
+        return new PartitionedImpl<List, T>(jobBuilder);
     }
 
     @Override
-    public <I> Partitioned<I> map(SerializableFunction<T, I> f) {
+    public <I> Partitioned<K, I> map(SerializableFunction<T, I> f) {
         jobBuilder.addMapper(f);
-        return new PartitionedImpl<I>(jobBuilder);
+        return new PartitionedImpl<K, I>(jobBuilder);
     }
 
     @Override
-    public <R extends Serializable> Iterable<R> reduce(SerializableFunction<Iterable<T>, R> f) throws IOException {
+    public <R extends Serializable> Map<K, R> reduce(SerializableFunction<Iterable<T>, R> f) throws IOException {
         jobBuilder.setReducer(f);
         return jobBuilder.reduceToMultipleValues();
     }

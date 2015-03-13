@@ -1,5 +1,6 @@
 package me.jaksa.hbase.lite;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
@@ -13,9 +14,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NavigableMap;
+import java.util.*;
 
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
 
@@ -98,17 +97,17 @@ class TempStorage {
         return (R) SerializableUtils.fromBytes(value);
     }
 
-    public <R extends Serializable> Iterable<R> retrieveResults(Job job) throws IOException, ClassNotFoundException {
+    public <K, R extends Serializable> Map<K, R> retrieveResults(Job job) throws IOException, ClassNotFoundException {
         Get get = new Get(toBytes(job.getJobID().getJtIdentifier()));
         Result row = hTable.get(get);
         if (row.isEmpty()) return null;
 
         NavigableMap<byte[], byte[]> familyMap = row.getFamilyMap(COLUMN_FAMILY);
 
-        ArrayList<R> results = new ArrayList<>(familyMap.size());
-        for (byte[] value : familyMap.values()) {
-            results.add((R) SerializableUtils.fromBytes(value));
-        };
+        Map<K, R> results = new LinkedMap(familyMap.size());
+        for (byte[] key : familyMap.keySet()) {
+            results.put((K) SerializableUtils.fromBytes(key), (R) SerializableUtils.fromBytes(familyMap.get(key)));
+        }
 
         return results;
     }

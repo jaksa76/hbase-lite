@@ -16,7 +16,7 @@ class MappedImpl<T> implements Mapped<T> {
     }
 
     @Override
-    public <P> Partitioned<T> partitionBy(PartitionFunction<T, P> f) {
+    public <P> Partitioned<P, T> partitionBy(PartitionFunction<T, P> f) {
         jobBuilder.addPartitioner(f);
         return new PartitionedImpl<>(jobBuilder);
     }

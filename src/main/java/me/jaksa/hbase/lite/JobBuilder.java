@@ -13,6 +13,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -104,16 +105,16 @@ class JobBuilder {
         }
     }
 
-    public <R extends Serializable> Iterable<R> reduceToMultipleValues() throws IOException {
+    public <K, R extends Serializable> Map<K, R> reduceToMultipleValues() throws IOException {
         try {
             if (job == null) job = createJob();
             boolean success = job.waitForCompletion(true);
             if (!success) throw new IOException("Failed processing " + job.getStatus().getFailureInfo());
 
             // if there are no rows in the table no result will be stored
-            Iterable<R> result = tempStorage.retrieveResults(job);
+            Map<K, R> result = tempStorage.retrieveResults(job);
 
-            return (result != null) ? result : Collections.emptyList();
+            return (result != null) ? result : Collections.emptyMap();
         } catch (ClassNotFoundException | InterruptedException e) {
             throw new IOException(e);
         }

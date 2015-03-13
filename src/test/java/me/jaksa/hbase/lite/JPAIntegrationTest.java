@@ -6,8 +6,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -46,17 +49,17 @@ public class JPAIntegrationTest {
         employees.put(new Employee(3l, "Jack", 100000.0, "SW", "Senior Manager"));
         employees.put(new Employee(4l, "Joan", 100000.0, "SW", "Senior Manager"));
 
-        List<Long> results = Lists.newArrayList(employees
+        Map<List, Long> results = employees
                 .partitionBy(employee -> employee.getDepartment())
                 .map(employee -> employee.getSalary())
                 .map(salary -> salary * 115 / 100)
                 .map(salary -> salary + 3000)
                 .partitionBy(salary -> Math.round(salary / 10000))
-                .reduce(salaries -> Stats.count(salaries)));
+                .reduce(salaries -> Stats.count(salaries));
 
         assertThat(results.size(), is(3));
-        assertThat(results.get(0), is(1L));
-        assertThat(results.get(1), is(2L));
-        assertThat(results.get(2), is(1L));
+        assertThat(results.get(asList("SALES", 4L)), is(1L));
+        assertThat(results.get(asList("SW", 4L)), is(1L));
+        assertThat(results.get(asList("SW", 12L)), is(2L));
     }
 }

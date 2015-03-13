@@ -109,10 +109,10 @@ public class Table<T> {
      * @return data that can be processed further
      * @throws java.io.IOException if there is a communication problem with HBase
      */
-    public <P> Partitioned<T> partitionBy(PartitionFunction<T, P> f) throws IOException {
+    public <P> Partitioned<P, T> partitionBy(PartitionFunction<T, P> f) throws IOException {
         JobBuilder jobBuilder = createJobBuilder();
         jobBuilder.addPartitioner(f);
-        return new PartitionedImpl<T>(jobBuilder);
+        return new PartitionedImpl<P, T>(jobBuilder);
     }
 
 

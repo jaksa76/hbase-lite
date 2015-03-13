@@ -2,6 +2,9 @@ package me.jaksa.hbase.lite;
 
 import org.apache.commons.lang.StringUtils;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author Jaksa Vuckovic
  */
@@ -48,13 +51,14 @@ public class Demo {
 
         // you can split the reduce into multiple groups using a partition
         // in Hadoop MR terms the partition determines the key of the mapper output
-        // notice that in this case reduce returns an iterable
-        // In future releases we will also be able to return a map so you get the name of the department as well
-        Iterable<Double> avgByDept = employees
+        // notice that in this case reduce returns a Map that holds the reduce value for
+        // each partition key
+        Map<String, Double> avgByDept = employees
                 .partitionBy(employee -> employee.getDepartment())
                 .map(employee -> employee.getSalary())
                 .reduce(salaries -> Stats.sum(salaries));
-        System.out.println("Average salaries by dept: " + StringUtils.join(avgByDept.iterator(), ','));
+        System.out.println("Average salaries by dept: ");
+        System.out.println(avgByDept);
 
         // you can chain map functions
         Double salariesAfterBonus = employees
@@ -65,20 +69,23 @@ public class Demo {
         System.out.println("Total cost after bonus: " + salariesAfterBonus);
 
         // you can specify several levels of partitioning
-        Iterable<Long> rolesByDept = employees
+        // the key of the map will be a list of 2 elements
+        Map<List, Long> rolesByDept = employees
                 .partitionBy(employee -> employee.getDepartment())
                 .partitionBy(employee -> employee.getTitle().contains("Junior"))
                 .reduce(all -> Stats.count(all));
-        System.out.println("Number of employees by role by department: " + StringUtils.join(rolesByDept.iterator(), ','));
+        System.out.println("Number of employees by role by department: ");
+        System.out.println(rolesByDept);
 
         // and you can interleave map and partitionBy
-        Iterable<Long> salaryBandsByDeptAfterBonus = employees
+        Map<List, Long> salaryBandsByDeptAfterBonus = employees
                 .partitionBy(employee -> employee.getDepartment())
                 .map(employee -> employee.getSalary())
                 .map(salary -> salary * 115 / 100)
                 .map(salary -> salary + 3000)
                 .partitionBy(salary -> Math.round(salary / 10000))
                 .reduce(salaries -> Stats.count(salaries)); // but there can be only one reduce and it will trigger the execution
-        System.out.println("Number of salaries per band by department: " + StringUtils.join(salaryBandsByDeptAfterBonus.iterator(), ','));
+        System.out.println("Number of salaries per band by department: ");
+        System.out.println(salaryBandsByDeptAfterBonus);
     }
 }
