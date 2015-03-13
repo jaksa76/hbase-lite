@@ -1,6 +1,5 @@
 package me.jaksa.hbase.lite;
 
-import com.google.common.collect.Iterables;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
@@ -17,12 +16,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableMap;
-import java.util.function.Function;
 
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
 
 /**
  * Used for storing parameters and results of map reduce jobs.
+ *
+ * @author Jaksa Vuckovic
  */
 class TempStorage {
 
@@ -31,7 +31,6 @@ class TempStorage {
     public static final byte[] VALUE = toBytes("val");
     public static final String REDUCER_KEY = "reducer-key";
     public static final String MAPPERS_KEY = "mappers-key";
-    public static final String PARTITIONERS_KEY = "partitioners-key";
     private static TempStorage instance;
 
     private final HTable hTable;
@@ -116,8 +115,11 @@ class TempStorage {
 
     public <T> Converter<T> retrieveConverter(Mapper.Context context) throws IOException {
         Class<Converter<T>> converterClazz = (Class<Converter<T>>) context.getConfiguration().getClass("converter", Converter.class);
+        Class<T> tClass = (Class<T>) context.getConfiguration().getClass("element", Converter.class);
         try {
-            return converterClazz.newInstance();
+            Converter<T> converter = converterClazz.newInstance();
+            if (converter instanceof GenericConverter) ((GenericConverter) converter).setElementClass(tClass);
+            return converter;
         } catch (IllegalAccessException | InstantiationException e) {
             throw new IOException("the converter class must have a no-arg public constructor", e);
         }
@@ -125,6 +127,10 @@ class TempStorage {
 
     public void storeConverter(Job job, Converter converter) {
         job.getConfiguration().setClass("converter", converter.getClass(), Converter.class);
+    }
+
+    public void storeElementClass(Job job, GenericConverter converter) {
+        job.getConfiguration().setClass("element", converter.getElementClass(), Serializable.class);
     }
 
     public void storeMapperFunctions(Job job, List<SerializableFunction> mappers) throws IOException {
@@ -148,26 +154,4 @@ class TempStorage {
             throw new RuntimeException("could not deserialize mappers", e);
         }
     }
-
-//    public void storePartitionerFunctions(Job job, List<SerializableFunction> mappers) throws IOException {
-//        String reducerKey = Long.toString(System.nanoTime());
-//        job.getConfiguration().set(PARTITIONERS_KEY, reducerKey);
-//
-//        Put put = new Put(Bytes.toBytes(reducerKey));
-//        put.add(COLUMN_FAMILY, VALUE, SerializableUtils.toBytes((Serializable) mappers));
-//        hTable.put(put);
-//    }
-//
-//    public List<SerializableFunction> loadPartitionerFunctions(Mapper.Context context) throws IOException {
-//        String reducerKey = context.getConfiguration().get(PARTITIONERS_KEY);
-//        Get get = new Get(toBytes(reducerKey));
-//        get.addColumn(COLUMN_FAMILY, VALUE);
-//        Result results = hTable.get(get);
-//        try {
-//            byte[] value = results.getValue(COLUMN_FAMILY, VALUE);
-//            return (List<SerializableFunction>) SerializableUtils.fromBytes(value);
-//        } catch (ClassNotFoundException e) {
-//            throw new RuntimeException("could not deserialize partitioners", e);
-//        }
-//    }
 }

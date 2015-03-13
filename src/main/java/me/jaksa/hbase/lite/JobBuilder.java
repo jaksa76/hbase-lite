@@ -59,6 +59,7 @@ class JobBuilder {
         TableMapReduceUtil.addDependencyJars(job);
 
         tempStorage.storeConverter(job, converter);
+        if (converter instanceof GenericConverter) tempStorage.storeElementClass(job, (GenericConverter) converter);
         tempStorage.storeReducerFunction(job, (Serializable) reducer);
 
         if (mappers == null) {

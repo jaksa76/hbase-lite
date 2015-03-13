@@ -1,70 +1,14 @@
 package me.jaksa.hbase.lite;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.util.Bytes;
-
-import java.io.Serializable;
 
 /**
  * @author Jaksa Vuckovic
  */
 public class Demo {
-    public static class Employee implements Serializable {
-        private final Long id;
-        private final String name;
-        private final Double salary;
-        private final String department;
-        private final String title;
-
-        public Employee(Long id, String name, Double salary, String department, String title) {
-            this.id = id;
-            this.name = name;
-            this.salary = salary;
-            this.department = department;
-            this.title = title;
-        }
-
-        public Long getId() { return id; }
-        public String getName() { return name; }
-        public Double getSalary() { return salary; }
-        public String getDepartment() { return department; }
-        public String getTitle() { return title; }
-    }
-
-    public static class EmployeeConverter implements Converter<Employee> {
-        private static final byte[] COLUMN_FAMILY = Bytes.toBytes("cf");
-        private static final byte[] NAME = Bytes.toBytes("name");
-        private static final byte[] SALARY = Bytes.toBytes("sal");
-        private static final byte[] DEPARTMENT = Bytes.toBytes("dep");
-        private static final byte[] TITLE = Bytes.toBytes("title");
-
-        @Override
-        public Employee convert(Result result) {
-            return new Employee(
-                Bytes.toLong(result.getRow()),
-                Bytes.toString(result.getValue(COLUMN_FAMILY, NAME)),
-                Bytes.toDouble(result.getValue(COLUMN_FAMILY, SALARY)),
-                Bytes.toString(result.getValue(COLUMN_FAMILY, DEPARTMENT)),
-                Bytes.toString(result.getValue(COLUMN_FAMILY, TITLE))
-            );
-        }
-
-        @Override
-        public Put toPut(Employee employee) {
-            Put put = new Put(Bytes.toBytes(employee.getId()));
-            put.addColumn(COLUMN_FAMILY, NAME, Bytes.toBytes(employee.getName()));
-            put.addColumn(COLUMN_FAMILY, SALARY, Bytes.toBytes(employee.getSalary()));
-            put.addColumn(COLUMN_FAMILY, DEPARTMENT, Bytes.toBytes(employee.getDepartment()));
-            put.addColumn(COLUMN_FAMILY, TITLE, Bytes.toBytes(employee.getTitle()));
-            return put;
-        }
-    }
-
     public static void main(String[] args) throws Exception {
-        // to create a table supply the table name, the columns and the converter
-        Table<Employee> employees = new Table<Employee>("employees", "cf:name,cf:sal,cf:dep,cf:title", new EmployeeConverter());
+        // to create a table supply the element class
+        Table<Employee> employees = new Table<Employee>(Employee.class);
 
         // Let's first delete all objects from the table
         employees.deleteAll();

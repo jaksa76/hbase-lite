@@ -21,12 +21,7 @@ class Grouper<T extends Serializable> extends TableMapper<BytesWritable, BytesWr
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
-        Class<Converter<T>> converterClazz = (Class<Converter<T>>) context.getConfiguration().getClass("converter", Converter.class);
-        try {
-            converter = converterClazz.newInstance();
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new IOException("the converter class must have a no-arg public constructor", e);
-        }
+        converter = TempStorage.getInstance().retrieveConverter(context);
     }
 
     protected void map(ImmutableBytesWritable key, Result value, Mapper.Context context) throws IOException, InterruptedException {

@@ -31,6 +31,16 @@ public class TestUtils {
         }
     }
 
+    public static void createEmployeeTable() throws IOException {
+        HBaseAdmin hbase = new HBaseAdmin(HBaseLite.getConfiguration());
+        if (!hbase.tableExists("Employees")) {
+            HTableDescriptor desc = new HTableDescriptor(TableName.valueOf("Employees"));
+            desc.addFamily(new HColumnDescriptor(Bytes.toBytes("cf")));
+            desc.addFamily(new HColumnDescriptor(Bytes.toBytes("ext")));
+            hbase.createTable(desc);
+        }
+    }
+
     static class Dummy implements Serializable {
         public final String name;
         public final String value;

@@ -20,18 +20,12 @@ import java.util.function.Function;
 class MapperAdaptor<T, I extends Serializable> extends TableMapper<BytesWritable, BytesWritable> {
     private Converter<T> converter;
     private List<SerializableFunction> mappers;
-//    private List<SerializableFunction> partitioners;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
-        Class<Converter<T>> converterClazz = (Class<Converter<T>>) context.getConfiguration().getClass("converter", Converter.class);
-        try {
-            converter = converterClazz.newInstance();
-            mappers = TempStorage.getInstance().loadMapperFunctions(context);
-//            partitioners = TempStorage.getInstance().loadPartitionerFunctions(context);
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new IOException("the converter class must have a no-arg public constructor", e);
-        }
+        TempStorage tempStorage = TempStorage.getInstance();
+        converter = tempStorage.retrieveConverter(context);
+        mappers = tempStorage.loadMapperFunctions(context);
     }
 
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {

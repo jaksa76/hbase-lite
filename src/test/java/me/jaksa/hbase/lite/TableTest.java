@@ -3,8 +3,6 @@ package me.jaksa.hbase.lite;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -53,18 +51,13 @@ public class TableTest {
 
     @Test()
     public void testCreatingATableWithSpacesInColumnsString() throws Exception {
-        List<Table.Column> columns = Table.extractColumns("fam1 :col1 , fam1: col2, fam2 : col1");
+        List<HColumn> columns = Table.extractColumns("fam1 :col1 , fam1: col2, fam2 : col1");
 
         assertThat(columns.size(), is(3));
 
-        assertThat(columns.get(0).family, is("fam1"));
-        assertThat(columns.get(0).name, is("col1"));
-
-        assertThat(columns.get(1).family, is("fam1"));
-        assertThat(columns.get(1).name, is("col2"));
-
-        assertThat(columns.get(2).family, is("fam2"));
-        assertThat(columns.get(2).name, is("col1"));
+        assertThat(columns.get(0), is(new HColumn("fam1", "col1")));
+        assertThat(columns.get(1), is(new HColumn("fam1", "col2")));
+        assertThat(columns.get(2), is(new HColumn("fam2", "col1")));
     }
 
     @Test

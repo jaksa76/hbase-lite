@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -22,9 +23,13 @@ import java.util.List;
  */
 public class Table<T> {
     private final String name;
-    private final List<Column> columns;
+    private final Collection<HColumn> columns;
     private final Converter<T> converter;
     private HTable hTable;
+
+    public Table(Class<T> clazz) {
+        this(JPAUtils.getTableName(clazz), JPAUtils.getColumns(clazz).values(), new GenericConverter<T>(clazz));
+    }
 
 
     /**
@@ -33,15 +38,19 @@ public class Table<T> {
      * @param converter the converter for the domain objects
      */
     public Table(String name, String columns, Converter<T> converter) {
-        this.name = name;
-        this.converter = converter;
-        this.columns = extractColumns(columns);
+        this(name, extractColumns(columns), converter);
     }
 
 
     public Table(HTable hTable, String columns, Converter<T> converter) {
         this(hTable.getName().getNameAsString(), columns, converter);
         this.hTable = hTable;
+    }
+
+    Table(String name, Collection<HColumn> columns, Converter<T> converter) {
+        this.name = name;
+        this.columns = columns;
+        this.converter = converter;
     }
 
 
@@ -55,8 +64,8 @@ public class Table<T> {
      */
     public T get(Object key) throws IOException {
         Get get = new Get(toBytes(key));
-        for (Column column : columns) {
-            get.addColumn(Bytes.toBytes(column.family), Bytes.toBytes(column.name));
+        for (HColumn column : columns) {
+            get.addColumn(column.family, column.name);
         }
         Result result = getHTable().get(get);
         if (result == null || result.isEmpty()) return null;
@@ -144,8 +153,8 @@ public class Table<T> {
 
     private Scan scan() {
         Scan scan = new Scan();
-        for (Column column : columns) {
-            scan.addColumn(Bytes.toBytes(column.family), Bytes.toBytes(column.name));
+        for (HColumn column : columns) {
+            scan.addColumn(column.family, column.name);
         }
         return scan;
     }
@@ -158,15 +167,15 @@ public class Table<T> {
     }
 
 
-    static List<Column> extractColumns(String columns) {
-        List<Column> columnsList = new ArrayList<Column>();
+    static List<HColumn> extractColumns(String columns) {
+        List<HColumn> columnsList = new ArrayList<HColumn>();
         if (columns == null || columns.isEmpty()) throw new IllegalArgumentException("you must specify some columns");
         for (String columnString : columns.split("\\s*,\\s*")) {
             String[] columnNameParts = columnString.split("\\s*:\\s*");
             if (columnNameParts.length != 2) throw new IllegalArgumentException("no valid family name in " + columnString);
             String family = columnNameParts[0];
             String columnName = columnNameParts[1];
-            columnsList.add(new Column(family, columnName));
+            columnsList.add(new HColumn(family, columnName));
         }
         return columnsList;
     }
@@ -197,13 +206,4 @@ public class Table<T> {
     }
 
 
-    static class Column {
-        public final String family;
-        public final String name;
-
-        private Column(String family, String name) {
-            this.family = family;
-            this.name = name;
-        }
-    }
 }
